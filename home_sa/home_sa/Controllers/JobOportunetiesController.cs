@@ -9,6 +9,7 @@ using home_sa.Data;
 using Microsoft.AspNetCore.Authorization;
 using home_sa.Models;
 using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
 
 namespace home_sa.Controllers
 {
@@ -65,21 +66,9 @@ namespace home_sa.Controllers
         {
             if (ModelState.IsValid)
             {
-                var currentUser = await _userManager.GetUserAsync(User);
-                if (currentUser == null)
-                {
-                    // Handle the case where the user is not found
-                    return RedirectToAction("Login", "Account");
-                }
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-                var jobOpportunity2 = new JobOpportunity
-                {
-                    // Assign properties
-                    jobTitle = jobOpportunity.jobId,
-                    jobDescription = jobOpportunity.jobDescription,
-                    // Assign employerId to the ID of the current user
-                    employerId = currentUser.Id
-                };
+                jobOpportunity.employerId = userId;
 
                 _context.Add(jobOpportunity);
                 await _context.SaveChangesAsync();
