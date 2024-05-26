@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
-namespace home_sa.Data
+namespace home_sa.Models
 {
-    public class JobOportunety
+    public class JobOpportunity
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

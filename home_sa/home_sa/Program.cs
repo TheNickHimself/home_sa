@@ -18,6 +18,17 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.R
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddRazorPages();
 
+builder.Services.AddControllersWithViews();
+
+var services = builder.Services;
+var configuration = builder.Configuration;
+
+services.AddAuthentication().AddGoogle(googleOptions =>
+{
+    googleOptions.ClientId = configuration["web:client_id"];
+    googleOptions.ClientSecret = configuration["web:client_secret"];
+});
+
 builder.Services.Configure<IdentityOptions>(options => {
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
@@ -29,6 +40,7 @@ builder.Services.Configure<IdentityOptions>(options => {
 
     options.SignIn.RequireConfirmedEmail = true;
 });
+
 
 var app = builder.Build();
 

@@ -104,7 +104,7 @@ namespace home_sa.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("home_sa.Data.JobOportunety", b =>
+            modelBuilder.Entity("home_sa.Data.JobOpportunity", b =>
                 {
                     b.Property<string>("jobId")
                         .ValueGeneratedOnAdd()
@@ -269,7 +269,7 @@ namespace home_sa.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("home_sa.Data.JobOportunety", b =>
+            modelBuilder.Entity("home_sa.Data.JobOpportunity", b =>
                 {
                     b.HasOne("home_sa.ApplicationUser", null)
                         .WithMany("JobOportuneties")

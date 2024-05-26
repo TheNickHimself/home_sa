@@ -1,0 +1,50 @@
+﻿@page
+@model home_sa.Areas.Identity.Pages.Account.Manage.EnableAuthenticatorModel
+@{
+    ViewData["Title"] = "Enable authenticator";
+}
+
+<h4>@ViewData["Title"]</h4>
+<hr />
+<div>
+    <p>
+        @if (Model.SharedKey != null)
+        {
+            <div class="alert alert-info">
+                <h4>Configure authenticator app</h4>
+                <p>
+                    To configure an authenticator app, scan the QR code below or use the
+                    <strong>key</strong> displayed below:
+                </p>
+                <p>
+                    <strong>Key:</strong> @Model.SharedKey
+                </p>
+                <div id="qrcode"></div>
+                <form asp-route="enableAuthenticator" method="post" class="form-horizontal">
+                    <div class="form-group">
+                        <label asp-for="Input.Code" class="control-label"></label>
+                        <input asp-for="Input.Code" class="form-control" />
+                        <span asp-validation-for="Input.Code" class="text-danger"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Verify</button>
+                </form>
+            </div>
+        }
+        else
+        {
+        <p class="text-danger">We were unable to load your shared key. Please try again.</p>
+        }
+    </p>
+</div>
+
+@section Scripts {
+    <script src="~/lib/qrcodejs/qrcode.min.js"></script>
+    <script type="text/javascript">
+        new QRCode(document.getElementById("qrcode"), {
+            text: "@Model.AuthenticatorUri",
+            width: 150,
+            height: 150
+        });
+    </script>
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using home_sa.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace home_sa.Data
@@ -9,6 +10,6 @@ namespace home_sa.Data
             : base(options)
         {
         }
-        public DbSet<JobOportunety> JobOportuneties { get; set; }
+        public DbSet<JobOpportunity> JobOportuneties { get; set; }
     }
 }

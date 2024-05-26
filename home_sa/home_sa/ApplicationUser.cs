@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using home_sa.Data;
+using home_sa.Models;
 
 namespace home_sa
 {
@@ -12,7 +12,7 @@ namespace home_sa
 
         public DateTime LastLoggedIn { get; set; }
 
-        public virtual ICollection<JobOportunety> JobOportuneties { get; set; }
+        public virtual ICollection<JobOpportunity> JobOportuneties { get; set; }
 
     }
 }
