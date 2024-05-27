@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using home_sa.Models;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 
 namespace home_sa.Controllers
 {
@@ -17,12 +18,14 @@ namespace home_sa.Controllers
     public class JobOportunetiesController : Controller
     {
         //private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ILogger<JobOportunetiesController> _logger;
         private readonly ApplicationDbContext _context;
 
-        public JobOportunetiesController(UserManager<ApplicationUser> userManager, ApplicationDbContext context)
+        public JobOportunetiesController(ILogger<JobOportunetiesController> logger, ApplicationDbContext context)
         {
             //_userManager = userManager;
             _context = context;
+            _logger = logger;
         }
 
         // GET: JobOportuneties
@@ -91,41 +94,90 @@ namespace home_sa.Controllers
             return View(jobOpportunity);
         }
 
-        public IActionResult Reply(int jobId)
+        // GET: JobOportuneties/Reply/1
+        public async Task<IActionResult> Reply(int id)
         {
-            var model = new JobReply { jobId = jobId };
-            return View(model);
+
+            if (id == null || _context.JobOportuneties == null)
+            {
+                return NotFound();
+            }
+
+            var jobOportunety = await _context.JobOportuneties.FindAsync(id);
+            if (jobOportunety == null)
+            {
+                return NotFound();
+            }
+
+            var jobReply = new JobReply
+            {
+                jobId = jobOportunety.jobId
+            };
+
+            return View(jobReply);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Reply([Bind("jobId,UploadedFile")] JobReply jobReply)
         {
+
             var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (!Guid.TryParse(userIdString, out Guid userId))
             {
+                // Handle the case where the userId is not a valid Guid
                 ModelState.AddModelError(string.Empty, "Invalid user ID.");
                 return View(jobReply);
             }
 
+
+
+            //jobReply.jobId = jobId;
+            //jobReply.JobOpportunity = jobId;
             jobReply.userId = userId;
+            //jobReply.FilePath = "test";
 
             if (ModelState.IsValid)
             {
-                if (jobReply.UploadedFile != null)
+                try
                 {
-                    var filePath = Path.Combine("uploads", Guid.NewGuid().ToString() + Path.GetExtension(jobReply.UploadedFile.FileName));
-                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    if (jobReply.UploadedFile != null)
                     {
-                        await jobReply.UploadedFile.CopyToAsync(stream);
+                        var filePath = Path.Combine("uploads", Guid.NewGuid().ToString() + Path.GetExtension(jobReply.UploadedFile.FileName));
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await jobReply.UploadedFile.CopyToAsync(stream);
+                        }
+                        jobReply.FilePath = filePath;
                     }
-                    jobReply.FilePath = filePath;
-                }
 
-                _context.Add(jobReply);
-                await _context.SaveChangesAsync();
-                return RedirectToAction("Details", new { id = jobReply.jobId });
+                    _context.Add(jobReply);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction("Details", new { id = jobReply.jobId });
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!_context.JobOportuneties.Any(e => e.jobId == jobReply.jobId))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+            }
+            else
+            {
+                // Log detailed errors
+                foreach (var state in ModelState)
+                {
+                    foreach (var error in state.Value.Errors)
+                    {
+                        _logger.LogError($"Property: {state.Key} Error: {error.ErrorMessage}");
+                    }
+                }
             }
 
             return View(jobReply);

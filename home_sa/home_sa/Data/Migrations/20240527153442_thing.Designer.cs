@@ -12,8 +12,8 @@ using home_sa.Data;
 namespace home_sa.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240527010025_test2")]
-    partial class test2
+    [Migration("20240527153442_thing")]
+    partial class thing
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -128,6 +128,31 @@ namespace home_sa.Data.Migrations
                     b.HasIndex("ApplicationUserId");
 
                     b.ToTable("JobOportuneties");
+                });
+
+            modelBuilder.Entity("home_sa.Models.JobReply", b =>
+                {
+                    b.Property<Guid>("replyId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FilePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("JobOpportunityjobId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("jobId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("userId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("replyId");
+
+                    b.HasIndex("JobOpportunityjobId");
+
+                    b.ToTable("JobReply");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -274,6 +299,13 @@ namespace home_sa.Data.Migrations
                         .HasForeignKey("ApplicationUserId");
                 });
 
+            modelBuilder.Entity("home_sa.Models.JobReply", b =>
+                {
+                    b.HasOne("home_sa.Models.JobOpportunity", null)
+                        .WithMany("Replies")
+                        .HasForeignKey("JobOpportunityjobId");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -328,6 +360,11 @@ namespace home_sa.Data.Migrations
             modelBuilder.Entity("home_sa.ApplicationUser", b =>
                 {
                     b.Navigation("JobOportuneties");
+                });
+
+            modelBuilder.Entity("home_sa.Models.JobOpportunity", b =>
+                {
+                    b.Navigation("Replies");
                 });
 #pragma warning restore 612, 618
         }

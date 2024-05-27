@@ -19,5 +19,7 @@ namespace home_sa.Models
         [Required]
         [Display(Name = "Job Description")]
         public string jobDescription { get; set; }
+
+        public ICollection<JobReply>? Replies { get; set; }
     }
 }

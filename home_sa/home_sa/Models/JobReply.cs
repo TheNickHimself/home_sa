@@ -10,13 +10,13 @@ namespace home_sa.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int replyId { get; set; }
+        public Guid replyId { get; set; }
 
         [Required]
         public int jobId { get; set; }
 
-        [ForeignKey("jobId")]
-        public JobOpportunity JobOpportunity { get; set; }
+        //[ForeignKey("jobId")]
+        //public JobOpportunity JobOpportunity { get; set; }
 
         [Required]
         public Guid userId { get; set; }
@@ -25,6 +25,6 @@ namespace home_sa.Models
         [FileExtension(".docx,.pdf")]
         public IFormFile UploadedFile { get; set; }
 
-        public string FilePath { get; set; }
+        public string? FilePath { get; set; }
     }
 }

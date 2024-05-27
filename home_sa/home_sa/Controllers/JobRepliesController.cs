@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using home_sa.Data;
 using home_sa.Models;
 using Microsoft.AspNetCore.Authorization;
-
+/*
 namespace home_sa.Controllers
 {
     [Authorize]
@@ -168,3 +168,4 @@ namespace home_sa.Controllers
         }
     }
 }
+*/
