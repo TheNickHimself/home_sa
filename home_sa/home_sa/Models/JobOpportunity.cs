@@ -7,13 +7,17 @@ namespace home_sa.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public string jobId { get; set; }
+        public int jobId { get; set; }
 
-        public string employerId { get; set; }
+        [Required]
+        public Guid employerId { get; set; }
 
+        [Required]
+        [Display(Name = "Job Title")]
         public string jobTitle { get; set; }
 
+        [Required]
+        [Display(Name = "Job Description")]
         public string jobDescription { get; set; }
-
     }
 }

@@ -12,14 +12,14 @@ using home_sa.Data;
 namespace home_sa.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240526185041_ApplicationUser")]
-    partial class ApplicationUser
+    [Migration("20240527010025_test2")]
+    partial class test2
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.25")
+                .HasAnnotation("ProductVersion", "6.0.29")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
@@ -33,7 +33,6 @@ namespace home_sa.Data.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Address")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ConcurrencyStamp")
@@ -48,14 +47,12 @@ namespace home_sa.Data.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("FirstName")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("LastLoggedIn")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("LastName")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("LockoutEnabled")
@@ -104,18 +101,19 @@ namespace home_sa.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("home_sa.Data.JobOpportunity", b =>
+            modelBuilder.Entity("home_sa.Models.JobOpportunity", b =>
                 {
-                    b.Property<string>("jobId")
+                    b.Property<int>("jobId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("jobId"), 1L, 1);
 
                     b.Property<string>("ApplicationUserId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("employerId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<Guid>("employerId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("jobDescription")
                         .IsRequired()
@@ -269,7 +267,7 @@ namespace home_sa.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("home_sa.Data.JobOpportunity", b =>
+            modelBuilder.Entity("home_sa.Models.JobOpportunity", b =>
                 {
                     b.HasOne("home_sa.ApplicationUser", null)
                         .WithMany("JobOportuneties")

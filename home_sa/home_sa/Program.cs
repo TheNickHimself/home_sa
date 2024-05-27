@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using home_sa;
-using home_sa.Data;
+using home_sa.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 

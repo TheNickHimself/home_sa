@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace home_sa.Data.Migrations
 {
-    public partial class ApplicationUser : Migration
+    public partial class test : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -13,15 +13,13 @@ namespace home_sa.Data.Migrations
                 name: "Address",
                 table: "AspNetUsers",
                 type: "nvarchar(max)",
-                nullable: true,
-                defaultValue: "");
+                nullable: true);
 
             migrationBuilder.AddColumn<string>(
                 name: "FirstName",
                 table: "AspNetUsers",
                 type: "nvarchar(max)",
-                nullable: true,
-                defaultValue: "");
+                nullable: true);
 
             migrationBuilder.AddColumn<DateTime>(
                 name: "LastLoggedIn",
@@ -34,14 +32,14 @@ namespace home_sa.Data.Migrations
                 name: "LastName",
                 table: "AspNetUsers",
                 type: "nvarchar(max)",
-                nullable: true,
-                defaultValue: "");
+                nullable: true);
 
             migrationBuilder.CreateTable(
                 name: "JobOportuneties",
                 columns: table => new
                 {
-                    jobId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    jobId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     employerId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     jobTitle = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     jobDescription = table.Column<string>(type: "nvarchar(max)", nullable: false),

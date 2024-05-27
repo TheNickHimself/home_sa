@@ -16,12 +16,12 @@ namespace home_sa.Controllers
     [Authorize]
     public class JobOportunetiesController : Controller
     {
-        private readonly UserManager<ApplicationUser> _userManager;
+        //private readonly UserManager<ApplicationUser> _userManager;
         private readonly ApplicationDbContext _context;
 
         public JobOportunetiesController(UserManager<ApplicationUser> userManager, ApplicationDbContext context)
         {
-            _userManager = userManager;
+            //_userManager = userManager;
             _context = context;
         }
 
@@ -34,7 +34,7 @@ namespace home_sa.Controllers
         }
 
         // GET: JobOportuneties/Details/5
-        public async Task<IActionResult> Details(string id)
+        public async Task<IActionResult> Details(int id)
         {
             if (id == null || _context.JobOportuneties == null)
             {
@@ -61,24 +61,38 @@ namespace home_sa.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("jobId,employerId,jobTitle,jobDescription")] JobOpportunity jobOpportunity)
+        //[ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create([Bind("jobTitle,jobDescription")] JobOpportunity jobOpportunity)
         {
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!Guid.TryParse(userIdString, out Guid userId))
+            {
+                // Handle the case where the userId is not a valid Guid
+                ModelState.AddModelError(string.Empty, "Invalid user ID.");
+                return View(jobOpportunity);
+            }
+            jobOpportunity.employerId = userId;
+
+            
+
             if (ModelState.IsValid)
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-                jobOpportunity.employerId = userId;
-
                 _context.Add(jobOpportunity);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+            foreach (var state in ModelState)
+            {
+                string error = ($"{state.Key}: {string.Join(", ", state.Value.Errors.Select(e => e.ErrorMessage))}");
+            }
+
+
             return View(jobOpportunity);
         }
 
         // GET: JobOportuneties/Edit/5
-        public async Task<IActionResult> Edit(string id)
+        public async Task<IActionResult> Edit(int id)
         {
             if (id == null || _context.JobOportuneties == null)
             {
@@ -98,7 +112,7 @@ namespace home_sa.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(string id, [Bind("jobId,employerId,jobTitle,jobDescription")] JobOpportunity jobOpportunity)
+        public async Task<IActionResult> Edit(int id, [Bind("jobId,employerId,jobTitle,jobDescription")] JobOpportunity jobOpportunity)
         {
             if (id != jobOpportunity.jobId)
             {
@@ -129,7 +143,7 @@ namespace home_sa.Controllers
         }
 
         // GET: JobOportuneties/Delete/5
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(int id)
         {
             if (id == null || _context.JobOportuneties == null)
             {
@@ -149,7 +163,7 @@ namespace home_sa.Controllers
         // POST: JobOportuneties/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(string id)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
             if (_context.JobOportuneties == null)
             {
@@ -165,7 +179,7 @@ namespace home_sa.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private bool JobOportunetyExists(string id)
+        private bool JobOportunetyExists(int id)
         {
           return (_context.JobOportuneties?.Any(e => e.jobId == id)).GetValueOrDefault();
         }
