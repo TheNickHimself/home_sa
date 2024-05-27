@@ -91,6 +91,46 @@ namespace home_sa.Controllers
             return View(jobOpportunity);
         }
 
+        public IActionResult Reply(int jobId)
+        {
+            var model = new JobReply { jobId = jobId };
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Reply([Bind("jobId,UploadedFile")] JobReply jobReply)
+        {
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!Guid.TryParse(userIdString, out Guid userId))
+            {
+                ModelState.AddModelError(string.Empty, "Invalid user ID.");
+                return View(jobReply);
+            }
+
+            jobReply.userId = userId;
+
+            if (ModelState.IsValid)
+            {
+                if (jobReply.UploadedFile != null)
+                {
+                    var filePath = Path.Combine("uploads", Guid.NewGuid().ToString() + Path.GetExtension(jobReply.UploadedFile.FileName));
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await jobReply.UploadedFile.CopyToAsync(stream);
+                    }
+                    jobReply.FilePath = filePath;
+                }
+
+                _context.Add(jobReply);
+                await _context.SaveChangesAsync();
+                return RedirectToAction("Details", new { id = jobReply.jobId });
+            }
+
+            return View(jobReply);
+        }
+
         // GET: JobOportuneties/Edit/5
         public async Task<IActionResult> Edit(int id)
         {

@@ -11,5 +11,6 @@ namespace home_sa.Data
         {
         }
         public DbSet<JobOpportunity> JobOportuneties { get; set; }
+        public DbSet<home_sa.Models.JobReply>? JobReply { get; set; }
     }
 }
