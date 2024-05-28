@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System;
+using System.Security.Cryptography.X509Certificates;
 
 namespace home_sa.Helpers
 {
@@ -11,23 +12,37 @@ namespace home_sa.Helpers
     {
         public static byte[] EncryptFile(byte[] fileData, RSA rsa, out byte[] encryptedSymmetricKey, out byte[] iv)
         {
-            using (var aes = Aes.Create())
-            {
-                aes.GenerateKey();
-                aes.GenerateIV();
-                iv = aes.IV;
-                encryptedSymmetricKey = rsa.Encrypt(aes.Key, RSAEncryptionPadding.Pkcs1);
+            Aes aes = Aes.Create();
+            aes.KeySize = 256;
+            aes.GenerateKey();
+            aes.GenerateIV();
 
-                using (var encryptor = aes.CreateEncryptor(aes.Key, aes.IV))
-                using (var ms = new MemoryStream())
+            byte[] aesKey = aes.Key;
+            byte[] aesIV = aes.IV;
+
+            encryptedSymmetricKey = rsa.Encrypt(aesKey, RSAEncryptionPadding.Pkcs1);
+
+
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.Key = aesKey;
+                aesAlg.IV = aesIV;
+                iv = aesAlg.IV;
+
+
+                ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+
+                using (MemoryStream msEncrypt = new MemoryStream())
                 {
-                    using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+                    using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
                     {
-                        cs.Write(fileData, 0, fileData.Length);
-                        ms.Position = 0;//maybe not needed
-                        cs.Close();
+                        csEncrypt.Write(fileData, 0, fileData.Length);
+                        //msEncrypt.Position = 0;//maybe not needed
+                        csEncrypt.Close();
+                        msEncrypt.Flush();
+
                     }
-                    return ms.ToArray();
+                    return msEncrypt.ToArray();
                 }
             }
         }

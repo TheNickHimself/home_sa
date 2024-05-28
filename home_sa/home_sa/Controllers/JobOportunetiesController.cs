@@ -14,10 +14,11 @@ using Microsoft.Extensions.Logging;
 using home_sa.Helpers;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Http;
 
 namespace home_sa.Controllers
 {
-    [Authorize] 
+    [Authorize]
     public class JobOportunetiesController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -34,9 +35,9 @@ namespace home_sa.Controllers
         // GET: JobOportuneties
         public async Task<IActionResult> Index()
         {
-              return _context.JobOportuneties != null ? 
-                          View(await _context.JobOportuneties.ToListAsync()) :
-                          Problem("Entity set 'ApplicationDbContext.JobOportuneties'  is null.");
+            return _context.JobOportuneties != null ?
+                        View(await _context.JobOportuneties.ToListAsync()) :
+                        Problem("Entity set 'ApplicationDbContext.JobOportuneties'  is null.");
         }
 
         // GET: JobOportuneties/Details/5
@@ -80,7 +81,7 @@ namespace home_sa.Controllers
             }
             jobOpportunity.employerId = userId;
 
-            
+
 
             if (ModelState.IsValid)
             {
@@ -124,6 +125,9 @@ namespace home_sa.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Reply([Bind("jobId,UploadedFile")] JobReply jobReply)
         {
+
+            IActionResult fake = null;
+
             var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var user = await _userManager.FindByIdAsync(userIdString);
 
@@ -157,17 +161,34 @@ namespace home_sa.Controllers
                         await jobReply.UploadedFile.CopyToAsync(ms);
                         var fileData = ms.ToArray();
 
+                        RSACryptoServiceProvider rsaProvider = new RSACryptoServiceProvider();
+                        byte[] publicKey = Convert.FromBase64String(user.PublicKey);
+                        byte[] privateKey = Convert.FromBase64String(user.PrivateKey);
+
+
                         // Encrypt the file
-                        using (var rsa = new RSACryptoServiceProvider(2048))
+                        using (RSA rsa = RSA.Create())
                         {
-                            rsa.ImportRSAPublicKey(Convert.FromBase64String(user.PublicKey), out _);
+                            //rsa.ImportRSAPublicKey(Convert.FromBase64String(user.PublicKey), out _);
+                            rsa.ImportRSAPublicKey(publicKey, out _);
+                            rsa.ImportRSAPrivateKey(privateKey, out _);
+
+                            RSAParameters param = rsa.ExportParameters(true);
+
+                            string xmlParam = rsa.ToXmlString(true);
+                            rsa.FromXmlString(xmlParam);
+
+
+                            // rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(user.PublicKey), out _);
                             var encryptedFileData = EncryptionHelper.EncryptFile(fileData, rsa, out byte[] encryptedSymmetricKey, out byte[] iv);
 
                             System.IO.File.WriteAllBytes(filePath, encryptedFileData);
                             jobReply.EncryptedSymmetricKey = Convert.ToBase64String(encryptedSymmetricKey);
                             jobReply.IV = Convert.ToBase64String(iv);
                         }
+
                     }
+
                     jobReply.FilePath = filePath;
 
                     // Sign the file
@@ -177,6 +198,7 @@ namespace home_sa.Controllers
                     var fileBytes2 = System.IO.File.ReadAllBytes(filePath);
 
                     var didItWork = DigitalSignatureHelper.VerifyData(fileBytes, Convert.FromBase64String(jobReply.signature), user.PublicKey);
+
 
                 }
                 catch (Exception ex)
@@ -206,126 +228,127 @@ namespace home_sa.Controllers
             return View(jobReply);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Download(int jobId, int replyId)
-        {
-            var jobReply = await _context.JobReply.FindAsync(replyId);
-            if (jobReply == null || jobReply.jobId != jobId)
+
+            [HttpGet]
+            public async Task<IActionResult> Download(int jobId, int replyId)
             {
-                return NotFound();
-            }
-
-            var filePath = jobReply.FilePath;
-            var encryptedFileData = await System.IO.File.ReadAllBytesAsync(filePath);
-            var user = await _userManager.FindByIdAsync(jobReply.userId.ToString());
-
-            // Decrypt the file
-            byte[] decryptedFileData;
-            using (var rsa = new RSACryptoServiceProvider(2048))
-            {
-                rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(user.PublicKey), out _);
-                decryptedFileData = EncryptionHelper.DecryptFile(encryptedFileData, Convert.FromBase64String(jobReply.EncryptedSymmetricKey), Convert.FromBase64String(jobReply.IV));
-            }
-
-            if (!DigitalSignatureHelper.VerifyData(decryptedFileData, Convert.FromBase64String(jobReply.signature), user.PublicKey))
-            {
-                return BadRequest("File signature verification failed.");
-            }
-
-            return File(decryptedFileData, "application/octet-stream", Path.GetFileName(filePath));
-        }
-
-        // GET: JobOportuneties/Edit/5
-        public async Task<IActionResult> Edit(int id)
-        {
-            if (id == null || _context.JobOportuneties == null)
-            {
-                return NotFound();
-            }
-
-            var jobOportunety = await _context.JobOportuneties.FindAsync(id);
-            if (jobOportunety == null)
-            {
-                return NotFound();
-            }
-            return View(jobOportunety);
-        }
-
-        // POST: JobOportuneties/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("jobId,employerId,jobTitle,jobDescription")] JobOpportunity jobOpportunity)
-        {
-            if (id != jobOpportunity.jobId)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
+                var jobReply = await _context.JobReply.FindAsync(replyId);
+                if (jobReply == null || jobReply.jobId != jobId)
                 {
-                    _context.Update(jobOpportunity);
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
+
+                var filePath = jobReply.FilePath;
+                var encryptedFileData = await System.IO.File.ReadAllBytesAsync(filePath);
+                var user = await _userManager.FindByIdAsync(jobReply.userId.ToString());
+
+                // Decrypt the file
+                byte[] decryptedFileData;
+                using (var rsa = new RSACryptoServiceProvider(2048))
                 {
-                    if (!JobOportunetyExists(jobOpportunity.jobId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(user.PublicKey), out _);
+                    decryptedFileData = EncryptionHelper.DecryptFile(encryptedFileData, Convert.FromBase64String(jobReply.EncryptedSymmetricKey), Convert.FromBase64String(jobReply.IV));
                 }
+
+                if (!DigitalSignatureHelper.VerifyData(decryptedFileData, Convert.FromBase64String(jobReply.signature), user.PublicKey))
+                {
+                    return BadRequest("File signature verification failed.");
+                }
+
+                return File(decryptedFileData, "application/octet-stream", Path.GetFileName(filePath));
+            }
+
+            // GET: JobOportuneties/Edit/5
+            public async Task<IActionResult> Edit(int id)
+            {
+                if (id == null || _context.JobOportuneties == null)
+                {
+                    return NotFound();
+                }
+
+                var jobOportunety = await _context.JobOportuneties.FindAsync(id);
+                if (jobOportunety == null)
+                {
+                    return NotFound();
+                }
+                return View(jobOportunety);
+            }
+
+            // POST: JobOportuneties/Edit/5
+            // To protect from overposting attacks, enable the specific properties you want to bind to.
+            // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+            [HttpPost]
+            [ValidateAntiForgeryToken]
+            public async Task<IActionResult> Edit(int id, [Bind("jobId,employerId,jobTitle,jobDescription")] JobOpportunity jobOpportunity)
+            {
+                if (id != jobOpportunity.jobId)
+                {
+                    return NotFound();
+                }
+
+                if (ModelState.IsValid)
+                {
+                    try
+                    {
+                        _context.Update(jobOpportunity);
+                        await _context.SaveChangesAsync();
+                    }
+                    catch (DbUpdateConcurrencyException)
+                    {
+                        if (!JobOportunetyExists(jobOpportunity.jobId))
+                        {
+                            return NotFound();
+                        }
+                        else
+                        {
+                            throw;
+                        }
+                    }
+                    return RedirectToAction(nameof(Index));
+                }
+                return View(jobOpportunity);
+            }
+
+            // GET: JobOportuneties/Delete/5
+            public async Task<IActionResult> Delete(int id)
+            {
+                if (id == null || _context.JobOportuneties == null)
+                {
+                    return NotFound();
+                }
+
+                var jobOpportunity = await _context.JobOportuneties
+                    .FirstOrDefaultAsync(m => m.jobId == id);
+                if (jobOpportunity == null)
+                {
+                    return NotFound();
+                }
+
+                return View(jobOpportunity);
+            }
+
+            // POST: JobOportuneties/Delete/5
+            [HttpPost, ActionName("Delete")]
+            [ValidateAntiForgeryToken]
+            public async Task<IActionResult> DeleteConfirmed(int id)
+            {
+                if (_context.JobOportuneties == null)
+                {
+                    return Problem("Entity set 'ApplicationDbContext.JobOportuneties'  is null.");
+                }
+                var jobOpportunity = await _context.JobOportuneties.FindAsync(id);
+                if (jobOpportunity != null)
+                {
+                    _context.JobOportuneties.Remove(jobOpportunity);
+                }
+
+                await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            return View(jobOpportunity);
-        }
 
-        // GET: JobOportuneties/Delete/5
-        public async Task<IActionResult> Delete(int id)
-        {
-            if (id == null || _context.JobOportuneties == null)
+            private bool JobOportunetyExists(int id)
             {
-                return NotFound();
+                return (_context.JobOportuneties?.Any(e => e.jobId == id)).GetValueOrDefault();
             }
-
-            var jobOpportunity = await _context.JobOportuneties
-                .FirstOrDefaultAsync(m => m.jobId == id);
-            if (jobOpportunity == null)
-            {
-                return NotFound();
-            }
-
-            return View(jobOpportunity);
         }
-
-        // POST: JobOportuneties/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            if (_context.JobOportuneties == null)
-            {
-                return Problem("Entity set 'ApplicationDbContext.JobOportuneties'  is null.");
-            }
-            var jobOpportunity = await _context.JobOportuneties.FindAsync(id);
-            if (jobOpportunity != null)
-            {
-                _context.JobOportuneties.Remove(jobOpportunity);
-            }
-            
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
-        private bool JobOportunetyExists(int id)
-        {
-          return (_context.JobOportuneties?.Any(e => e.jobId == id)).GetValueOrDefault();
-        }
-    }
-}
+    } 
