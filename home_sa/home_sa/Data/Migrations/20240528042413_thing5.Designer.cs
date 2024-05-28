@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using home_sa.Data;
 
@@ -11,9 +12,10 @@ using home_sa.Data;
 namespace home_sa.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240528042413_thing5")]
+    partial class thing5
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -142,7 +144,10 @@ namespace home_sa.Data.Migrations
                     b.Property<string>("IV")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("JobOpportunityId")
+                    b.Property<int?>("JobOpportunityjobId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("jobId")
                         .HasColumnType("int");
 
                     b.Property<Guid>("userId")
@@ -150,7 +155,7 @@ namespace home_sa.Data.Migrations
 
                     b.HasKey("replyId");
 
-                    b.HasIndex("JobOpportunityId");
+                    b.HasIndex("JobOpportunityjobId");
 
                     b.ToTable("JobReply");
                 });
@@ -303,9 +308,7 @@ namespace home_sa.Data.Migrations
                 {
                     b.HasOne("home_sa.Models.JobOpportunity", "JobOpportunity")
                         .WithMany("Replies")
-                        .HasForeignKey("JobOpportunityId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("JobOpportunityjobId");
 
                     b.Navigation("JobOpportunity");
                 });

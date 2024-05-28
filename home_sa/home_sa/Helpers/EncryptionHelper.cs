@@ -32,12 +32,14 @@ namespace home_sa.Helpers
             }
         }
 
-        public static byte[] DecryptFile(byte[] encryptedFileData, RSA rsa, byte[] encryptedSymmetricKey, byte[] iv)
+        public static byte[] DecryptFile(byte[] encryptedFileData, byte[] symmetricKey, byte[] iv)
         {
-            var symmetricKey = rsa.Decrypt(encryptedSymmetricKey, RSAEncryptionPadding.Pkcs1);
 
             using (var aes = Aes.Create())
             {
+                //aes.Key
+                //var symmetricKey = rsa.Decrypt(encryptedSymmetricKey, RSAEncryptionPadding.Pkcs1);
+
                 using (var decryptor = aes.CreateDecryptor(symmetricKey, iv))
                 using (var ms = new MemoryStream(encryptedFileData))
                 using (var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))

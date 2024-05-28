@@ -1,4 +1,4 @@
-﻿@model IEnumerable<home_sa.Models.JobOpportunity>
+﻿@model IEnumerable<home_sa.Models.JobReply>
 
 @{
     ViewData["Title"] = "Index";
@@ -12,15 +12,10 @@
 <table class="table">
     <thead>
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.employerId)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.jobTitle)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.jobDescription)
-            </th>
+            <th>@Html.DisplayNameFor(model => model.jobId)</th>
+            <th>@Html.DisplayNameFor(model => model.userId)</th>
+            <th>Job Title</th>
+            <th>Job Description</th>
             <th></th>
         </tr>
     </thead>
@@ -28,18 +23,14 @@
         @foreach (var item in Model)
         {
             <tr>
+                <td>@Html.DisplayFor(modelItem => item.jobId)</td>
+                <td>@Html.DisplayFor(modelItem => item.userId)</td>
+                <td>@Html.DisplayFor(modelItem => item.JobOpportunity.jobTitle)</td>
+                <td>@Html.DisplayFor(modelItem => item.JobOpportunity.jobDescription)</td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.employerId)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.jobTitle)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.jobDescription)
-                </td>
-                <td>
-                    <a asp-action="Reply" asp-route-jobId="@item.jobId">Reply</a> |
-                    <a asp-action="Details" asp-route-id="@item.jobId">Details</a>
+                    <a asp-action="Download" asp-route-replyId="@item.replyId">Dowload Doc</a> |
+                    <a asp-action="Edit" asp-route-id="@item.replyId">Edit</a> |
+                    <a asp-action="Delete" asp-route-id="@item.replyId">Delete</a>
                 </td>
             </tr>
         }

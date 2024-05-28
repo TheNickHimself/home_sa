@@ -13,10 +13,6 @@ namespace home_sa.Models
         public Guid replyId { get; set; }
 
         [Required]
-        [ForeignKey("jobId")]
-        public int jobId { get; set; }
-
-        [Required]
         public Guid userId { get; set; }
 
         [NotMapped]
@@ -33,5 +29,18 @@ namespace home_sa.Models
 
         [NotMapped]
         public string? signature { get; set; }
+
+        [Required]
+        [ForeignKey("JobOpportunity")]
+        public int JobOpportunityId { get; set; } // Unique foreign key name
+
+        [NotMapped]
+        public int jobId
+        {
+            get => JobOpportunityId;
+            set => JobOpportunityId = value;
+        }
+
+        public JobOpportunity? JobOpportunity { get; set; } // Navigation property
     }
 }

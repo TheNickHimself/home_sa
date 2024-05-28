@@ -17,7 +17,7 @@ using System.Security.Cryptography;
 
 namespace home_sa.Controllers
 {
-    [Authorize(Roles = "Admin,Employer")] 
+    [Authorize] 
     public class JobOportunetiesController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -174,6 +174,9 @@ namespace home_sa.Controllers
                     var fileBytes = System.IO.File.ReadAllBytes(filePath);
                     var signature = DigitalSignatureHelper.SignData(fileBytes, user.PrivateKey);
                     jobReply.signature = Convert.ToBase64String(signature);
+                    var fileBytes2 = System.IO.File.ReadAllBytes(filePath);
+
+                    var didItWork = DigitalSignatureHelper.VerifyData(fileBytes, Convert.FromBase64String(jobReply.signature), user.PublicKey);
 
                 }
                 catch (Exception ex)
@@ -185,20 +188,18 @@ namespace home_sa.Controllers
 
             jobReply.userId = userId;
 
-
             if (ModelState.IsValid)
             {
                 _context.Add(jobReply);
                 await _context.SaveChangesAsync();
                 return RedirectToAction("Details", new { id = jobReply.jobId });
             }
-
-            // Log detailed model state errors
             foreach (var state in ModelState)
             {
                 foreach (var error in state.Value.Errors)
                 {
-                    var yea = ($"Property: {state.Key}, Error: {error.ErrorMessage}");
+                    string errorWord = ($"Property: {state.Key}, Error: {error.ErrorMessage}");
+                    Console.WriteLine(errorWord);
                 }
             }
 
@@ -223,7 +224,7 @@ namespace home_sa.Controllers
             using (var rsa = new RSACryptoServiceProvider(2048))
             {
                 rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(user.PublicKey), out _);
-                decryptedFileData = EncryptionHelper.DecryptFile(encryptedFileData, rsa, Convert.FromBase64String(jobReply.EncryptedSymmetricKey), Convert.FromBase64String(jobReply.IV));
+                decryptedFileData = EncryptionHelper.DecryptFile(encryptedFileData, Convert.FromBase64String(jobReply.EncryptedSymmetricKey), Convert.FromBase64String(jobReply.IV));
             }
 
             if (!DigitalSignatureHelper.VerifyData(decryptedFileData, Convert.FromBase64String(jobReply.signature), user.PublicKey))
