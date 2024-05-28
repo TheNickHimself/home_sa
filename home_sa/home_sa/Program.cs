@@ -52,11 +52,16 @@ using (var scope = scopeFactory.CreateScope())
     var roleManager = scope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
     var userManager = scope.ServiceProvider.GetService<UserManager<ApplicationUser>>();
 
-    bool adminExists = roleManager.RoleExistsAsync("Admin").Result;
+    string[] roleNames = { "Admin", "Employee", "Employer" };
+    IdentityResult roleResult;
 
-    if (!adminExists)
+    foreach (var roleName in roleNames)
     {
-        roleManager.CreateAsync(new IdentityRole("Admin")).Wait();
+        var roleExist = await roleManager.RoleExistsAsync(roleName);
+        if (!roleExist)
+        {
+            roleResult = await roleManager.CreateAsync(new IdentityRole(roleName));
+        }
     }
 
     var adminUser = userManager.FindByEmailAsync("admin@mysite.com").Result;
@@ -72,12 +77,6 @@ using (var scope = scopeFactory.CreateScope())
             "SecretPassword123!"
         ).Result;
 
-        if (!createUserIdentityResult.Succeeded)
-        {
-            // user creation has failed!
-            // try again or handle this issue
-        }
-
         adminUser = userManager.FindByEmailAsync("admin@mysite.com").Result;
     }
 
@@ -92,7 +91,7 @@ using (var scope = scopeFactory.CreateScope())
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseMigrationsEndPoint();
+    app.UseDeveloperExceptionPage();
 }
 else
 {

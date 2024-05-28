@@ -5,12 +5,12 @@ namespace home_sa
 {
     public class ApplicationUser : IdentityUser
     {
-        public string? FirstName { get; set; }
-        public string? LastName { get; set; }
-
-        public string? Address { get; set; }
 
         public DateTime LastLoggedIn { get; set; }
+
+        public string PublicKey { get; set; }
+
+        public string PrivateKey { get; set; }
 
         public virtual ICollection<JobOpportunity> JobOportuneties { get; set; }
 

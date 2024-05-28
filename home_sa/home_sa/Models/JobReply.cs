@@ -13,10 +13,8 @@ namespace home_sa.Models
         public Guid replyId { get; set; }
 
         [Required]
+        [ForeignKey("jobId")]
         public int jobId { get; set; }
-
-        //[ForeignKey("jobId")]
-        //public JobOpportunity JobOpportunity { get; set; }
 
         [Required]
         public Guid userId { get; set; }
@@ -26,5 +24,14 @@ namespace home_sa.Models
         public IFormFile UploadedFile { get; set; }
 
         public string? FilePath { get; set; }
+
+
+        public string? EncryptedSymmetricKey { get; set; }
+
+
+        public string? IV { get; set; }
+
+        [NotMapped]
+        public string? signature { get; set; }
     }
 }

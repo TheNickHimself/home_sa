@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
+using System.Security.Cryptography;
 
 namespace home_sa.Areas.Identity.Pages.Account
 {
@@ -117,11 +118,18 @@ namespace home_sa.Areas.Identity.Pages.Account
 
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+
+                GenerateKeyPair(out string publicKey, out string privateKey);
+                user.PublicKey = publicKey;
+                user.PrivateKey = privateKey;
+
                 var result = await _userManager.CreateAsync(user, Input.Password);
 
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User created a new account with password.");
+
+                    await _userManager.AddToRoleAsync(user, "Employee");
 
                     var userId = await _userManager.GetUserIdAsync(user);
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -176,6 +184,15 @@ namespace home_sa.Areas.Identity.Pages.Account
                 throw new NotSupportedException("The default UI requires a user store with email support.");
             }
             return (IUserEmailStore<ApplicationUser>)_userStore;
+        }
+
+        private void GenerateKeyPair(out string publicKey, out string privateKey)
+        {
+            using (var rsa = new RSACryptoServiceProvider(2048))
+            {
+                publicKey = Convert.ToBase64String(rsa.ExportSubjectPublicKeyInfo());
+                privateKey = Convert.ToBase64String(rsa.ExportPkcs8PrivateKey());
+            }
         }
     }
 }

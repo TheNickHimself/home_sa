@@ -1,0 +1,30 @@
+﻿@model IEnumerable<RollManager>
+@{
+    ViewData["Title"] = "All Users";
+}
+
+<h1>All Users</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>User Name</th>
+            <th>Email</th>
+            <th>Roles</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+     <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.UserName</td>
+                <td>@user.Email</td>
+                <td>@string.Join(", ", user.Roles)</td>
+                <td>
+                    <a href="@Url.Action("EditRole", new { userId = user.UserId })" class="btn btn-primary">Edit Role</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

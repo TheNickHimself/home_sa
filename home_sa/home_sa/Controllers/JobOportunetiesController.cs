@@ -11,19 +11,22 @@ using home_sa.Models;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using Microsoft.Extensions.Logging;
+using home_sa.Helpers;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography;
 
 namespace home_sa.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "Admin,Employer")] 
     public class JobOportunetiesController : Controller
     {
-        //private readonly UserManager<ApplicationUser> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<JobOportunetiesController> _logger;
         private readonly ApplicationDbContext _context;
 
-        public JobOportunetiesController(ILogger<JobOportunetiesController> logger, ApplicationDbContext context)
+        public JobOportunetiesController(ILogger<JobOportunetiesController> logger, ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
-            //_userManager = userManager;
+            _userManager = userManager;
             _context = context;
             _logger = logger;
         }
@@ -121,66 +124,114 @@ namespace home_sa.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Reply([Bind("jobId,UploadedFile")] JobReply jobReply)
         {
-
             var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(userIdString);
 
             if (!Guid.TryParse(userIdString, out Guid userId))
             {
-                // Handle the case where the userId is not a valid Guid
                 ModelState.AddModelError(string.Empty, "Invalid user ID.");
                 return View(jobReply);
             }
 
+            if (jobReply.UploadedFile != null)
+            {
+                using (var stream = jobReply.UploadedFile.OpenReadStream())
+                {
+                    if (!FileValidationHelper.IsValidDocx(stream) && !FileValidationHelper.IsValidPdf(stream))
+                    {
+                        ModelState.AddModelError(string.Empty, "Invalid file type.");
+                        return View(jobReply);
+                    }
+                }
 
+                var filePath = Path.Combine("uploads", Guid.NewGuid().ToString() + Path.GetExtension(jobReply.UploadedFile.FileName));
+                try
+                {
+                    if (!Directory.Exists("uploads"))
+                    {
+                        Directory.CreateDirectory("uploads");
+                    }
 
-            //jobReply.jobId = jobId;
-            //jobReply.JobOpportunity = jobId;
+                    using (var ms = new MemoryStream())
+                    {
+                        await jobReply.UploadedFile.CopyToAsync(ms);
+                        var fileData = ms.ToArray();
+
+                        // Encrypt the file
+                        using (var rsa = new RSACryptoServiceProvider(2048))
+                        {
+                            rsa.ImportRSAPublicKey(Convert.FromBase64String(user.PublicKey), out _);
+                            var encryptedFileData = EncryptionHelper.EncryptFile(fileData, rsa, out byte[] encryptedSymmetricKey, out byte[] iv);
+
+                            System.IO.File.WriteAllBytes(filePath, encryptedFileData);
+                            jobReply.EncryptedSymmetricKey = Convert.ToBase64String(encryptedSymmetricKey);
+                            jobReply.IV = Convert.ToBase64String(iv);
+                        }
+                    }
+                    jobReply.FilePath = filePath;
+
+                    // Sign the file
+                    var fileBytes = System.IO.File.ReadAllBytes(filePath);
+                    var signature = DigitalSignatureHelper.SignData(fileBytes, user.PrivateKey);
+                    jobReply.signature = Convert.ToBase64String(signature);
+
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError(string.Empty, "File upload failed: " + ex.Message);
+                    return View(jobReply);
+                }
+            }
+
             jobReply.userId = userId;
-            //jobReply.FilePath = "test";
+
 
             if (ModelState.IsValid)
             {
-                try
-                {
-                    if (jobReply.UploadedFile != null)
-                    {
-                        var filePath = Path.Combine("uploads", Guid.NewGuid().ToString() + Path.GetExtension(jobReply.UploadedFile.FileName));
-                        using (var stream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await jobReply.UploadedFile.CopyToAsync(stream);
-                        }
-                        jobReply.FilePath = filePath;
-                    }
-
-                    _context.Add(jobReply);
-                    await _context.SaveChangesAsync();
-                    return RedirectToAction("Details", new { id = jobReply.jobId });
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!_context.JobOportuneties.Any(e => e.jobId == jobReply.jobId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                _context.Add(jobReply);
+                await _context.SaveChangesAsync();
+                return RedirectToAction("Details", new { id = jobReply.jobId });
             }
-            else
+
+            // Log detailed model state errors
+            foreach (var state in ModelState)
             {
-                // Log detailed errors
-                foreach (var state in ModelState)
+                foreach (var error in state.Value.Errors)
                 {
-                    foreach (var error in state.Value.Errors)
-                    {
-                        _logger.LogError($"Property: {state.Key} Error: {error.ErrorMessage}");
-                    }
+                    var yea = ($"Property: {state.Key}, Error: {error.ErrorMessage}");
                 }
             }
 
             return View(jobReply);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Download(int jobId, int replyId)
+        {
+            var jobReply = await _context.JobReply.FindAsync(replyId);
+            if (jobReply == null || jobReply.jobId != jobId)
+            {
+                return NotFound();
+            }
+
+            var filePath = jobReply.FilePath;
+            var encryptedFileData = await System.IO.File.ReadAllBytesAsync(filePath);
+            var user = await _userManager.FindByIdAsync(jobReply.userId.ToString());
+
+            // Decrypt the file
+            byte[] decryptedFileData;
+            using (var rsa = new RSACryptoServiceProvider(2048))
+            {
+                rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(user.PublicKey), out _);
+                decryptedFileData = EncryptionHelper.DecryptFile(encryptedFileData, rsa, Convert.FromBase64String(jobReply.EncryptedSymmetricKey), Convert.FromBase64String(jobReply.IV));
+            }
+
+            if (!DigitalSignatureHelper.VerifyData(decryptedFileData, Convert.FromBase64String(jobReply.signature), user.PublicKey))
+            {
+                return BadRequest("File signature verification failed.");
+            }
+
+            return File(decryptedFileData, "application/octet-stream", Path.GetFileName(filePath));
         }
 
         // GET: JobOportuneties/Edit/5
